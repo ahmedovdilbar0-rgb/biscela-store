@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biscela Admin Panel</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Roboto',sans-serif; background:#f3f4f6; color:#1a1a1a; }
+
+/* LOGIN */
+.login-wrap {
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+}
+.login-box {
+  background:#fff; border-radius:16px; padding:40px 36px;
+  box-shadow:0 8px 40px rgba(0,0,0,0.12); width:100%; max-width:380px;
+  text-align:center;
+}
+.login-box h1 { font-size:24px; font-weight:900; margin-bottom:6px; }
+.login-box p { color:#6b7280; font-size:14px; margin-bottom:28px; }
+.login-box input {
+  width:100%; padding:12px 14px; border:1.5px solid #e5e7eb;
+  border-radius:8px; font-size:14px; margin-bottom:12px;
+  font-family:'Roboto',sans-serif; outline:none;
+}
+.login-box input:focus { border-color:#e53935; }
+.login-btn {
+  width:100%; background:#e53935; color:#fff; border:none;
+  padding:14px; border-radius:8px; font-size:16px; font-weight:700;
+  cursor:pointer; font-family:'Roboto',sans-serif;
+}
+.login-btn:hover { background:#c62828; }
+.login-error { color:#e53935; font-size:13px; margin-top:10px; }
+
+/* LAYOUT */
+.layout { display:flex; min-height:100vh; }
+
+/* SIDEBAR */
+.sidebar {
+  width:220px; background:#1a1a1a; color:#fff;
+  padding:24px 0; flex-shrink:0; position:fixed;
+  top:0; left:0; height:100vh; overflow-y:auto;
+}
+.sidebar-logo {
+  padding:0 20px 24px; border-bottom:1px solid rgba(255,255,255,0.1);
+  font-size:18px; font-weight:900; color:#fff;
+}
+.sidebar-logo span { color:#e53935; }
+.sidebar-menu { padding:16px 0; }
+.menu-item {
+  display:flex; align-items:center; gap:10px;
+  padding:12px 20px; color:rgba(255,255,255,0.7);
+  cursor:pointer; transition:all 0.2s; font-size:14px;
+  border-left:3px solid transparent;
+}
+.menu-item:hover { background:rgba(255,255,255,0.07); color:#fff; }
+.menu-item.active { background:rgba(229,57,53,0.15); color:#fff; border-left-color:#e53935; }
+.menu-icon { font-size:18px; }
+.sidebar-bottom {
+  position:absolute; bottom:0; left:0; right:0;
+  padding:16px 20px; border-top:1px solid rgba(255,255,255,0.1);
+}
+.logout-btn {
+  width:100%; background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.7);
+  border:none; padding:10px; border-radius:8px; cursor:pointer;
+  font-family:'Roboto',sans-serif; font-size:13px;
+}
+.logout-btn:hover { background:rgba(255,255,255,0.15); color:#fff; }
+
+/* MAIN */
+.main { margin-left:220px; padding:28px; flex:1; }
+
+/* TOP BAR */
+.topbar {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:28px;
+}
+.topbar h2 { font-size:22px; font-weight:900; }
+.btn {
+  display:inline-flex; align-items:center; gap:7px;
+  padding:10px 18px; border-radius:8px; font-size:14px;
+  font-weight:700; cursor:pointer; border:none;
+  font-family:'Roboto',sans-serif; transition:all 0.2s;
+}
+.btn-red { background:#e53935; color:#fff; }
+.btn-red:hover { background:#c62828; }
+.btn-gray { background:#e5e7eb; color:#374151; }
+.btn-gray:hover { background:#d1d5db; }
+.btn-green { background:#16a34a; color:#fff; }
+.btn-green:hover { background:#15803d; }
+
+/* STATS */
+.stats-grid {
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:16px; margin-bottom:28px;
+}
+.stat-card {
+  background:#fff; border-radius:12px; padding:20px;
+  box-shadow:0 2px 12px rgba(0,0,0,0.06);
+}
+.stat-icon { font-size:28px; margin-bottom:10px; }
+.stat-num { font-size:28px; font-weight:900; line-height:1; margin-bottom:4px; }
+.stat-label { font-size:13px; color:#6b7280; }
+
+/* TABLE */
+.card {
+  background:#fff; border-radius:12px;
+  box-shadow:0 2px 12px rgba(0,0,0,0.06); overflow:hidden;
+  margin-bottom:24px;
+}
+.card-header {
+  padding:16px 20px; border-bottom:1px solid #f3f4f6;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.card-header h3 { font-size:16px; font-weight:700; }
+table { width:100%; border-collapse:collapse; }
+th {
+  background:#f9fafb; padding:12px 16px; text-align:left;
+  font-size:12px; color:#6b7280; text-transform:uppercase;
+  letter-spacing:0.5px; font-weight:600;
+}
+td { padding:14px 16px; border-top:1px solid #f3f4f6; font-size:14px; }
+tr:hover td { background:#fafafa; }
+.badge {
+  display:inline-block; padding:3px 10px; border-radius:99px;
+  font-size:12px; font-weight:600;
+}
+.badge-green { background:#dcfce7; color:#16a34a; }
+.badge-yellow { background:#fef9c3; color:#ca8a04; }
+.badge-red { background:#fee2e2; color:#e53935; }
+
+/* MODAL */
+.modal-overlay {
+  position:fixed; top:0; left:0; right:0; bottom:0;
+  background:rgba(0,0,0,0.5); z-index:1000;
+  display:flex; align-items:center; justify-content:center;
+  padding:20px;
+}
+.modal {
+  background:#fff; border-radius:16px; width:100%;
+  max-width:600px; max-height:90vh; overflow-y:auto;
+  box-shadow:0 20px 60px rgba(0,0,0,0.3);
+}
+.modal-header {
+  padding:20px 24px; border-bottom:1px solid #f3f4f6;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.modal-header h3 { font-size:18px; font-weight:700; }
+.modal-close {
+  background:none; border:none; font-size:24px; cursor:pointer;
+  color:#6b7280; line-height:1;
+}
+.modal-body { padding:24px; }
+.form-group { margin-bottom:16px; }
+.form-group label { display:block; font-size:13px; font-weight:600; margin-bottom:6px; }
+.form-group input, .form-group textarea, .form-group select {
+  width:100%; padding:11px 13px; border:1.5px solid #e5e7eb;
+  border-radius:8px; font-size:14px; font-family:'Roboto',sans-serif;
+  outline:none; transition:border-color 0.2s;
+}
+.form-group input:focus, .form-group textarea:focus { border-color:#e53935; }
+.form-group textarea { resize:vertical; min-height:100px; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.modal-footer {
+  padding:16px 24px; border-top:1px solid #f3f4f6;
+  display:flex; gap:10px; justify-content:flex-end;
+}
+
+/* IMAGE UPLOAD */
+.img-upload-area {
+  border:2px dashed #e5e7eb; border-radius:8px; padding:20px;
+  text-align:center; cursor:pointer; transition:border-color 0.2s;
+  margin-bottom:10px;
+}
+.img-upload-area:hover { border-color:#e53935; }
+.img-upload-area input { display:none; }
+.img-preview { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.img-thumb {
+  width:80px; height:60px; object-fit:cover;
+  border-radius:6px; border:1px solid #e5e7eb;
+}
+.img-thumb-wrap { position:relative; }
+.img-remove {
+  position:absolute; top:-6px; right:-6px;
+  background:#e53935; color:#fff; border:none;
+  border-radius:50%; width:18px; height:18px;
+  font-size:11px; cursor:pointer; display:flex;
+  align-items:center; justify-content:center; line-height:1;
+}
+
+/* TABS */
+.tabs { display:flex; gap:4px; margin-bottom:20px; }
+.tab {
+  padding:8px 16px; border-radius:8px; cursor:pointer;
+  font-size:14px; font-weight:500; border:none;
+  background:#e5e7eb; color:#374151; font-family:'Roboto',sans-serif;
+}
+.tab.active { background:#e53935; color:#fff; }
+
+.hidden { display:none !important; }
+.loading { text-align:center; padding:40px; color:#6b7280; }
+.empty { text-align:center; padding:40px; color:#9ca3af; font-size:14px; }
+
+/* Status select */
+.status-select {
+  padding:5px 10px; border:1px solid #e5e7eb; border-radius:6px;
+  font-size:13px; font-family:'Roboto',sans-serif; cursor:pointer;
+}
+
+@media(max-width:768px) {
+  .sidebar { width:60px; }
+  .sidebar-logo, .menu-item span, .sidebar-bottom { display:none; }
+  .main { margin-left:60px; padding:16px; }
+  .form-row { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginPage">
+  <div class="login-box">
+    <h1>🛍️ Biscela</h1>
+    <p>Admin panelinə daxil olun</p>
+    <input type="email" id="loginEmail" placeholder="Email">
+    <input type="password" id="loginPass" placeholder="Şifrə">
+    <button class="login-btn" onclick="doLogin()">Daxil ol</button>
+    <div class="login-error hidden" id="loginError"></div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="layout hidden" id="adminPanel">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">Bis<span>cela</span></div>
+    <div class="sidebar-menu">
+      <div class="menu-item active" onclick="showPage('dashboard')" id="menu-dashboard">
+        <span class="menu-icon">📊</span><span>Dashboard</span>
+      </div>
+      <div class="menu-item" onclick="showPage('products')" id="menu-products">
+        <span class="menu-icon">📦</span><span>Məhsullar</span>
+      </div>
+      <div class="menu-item" onclick="showPage('orders')" id="menu-orders">
+        <span class="menu-icon">🛒</span><span>Sifarişlər</span>
+      </div>
+      <div class="menu-item" onclick="showPage('settings')" id="menu-settings">
+        <span class="menu-icon">⚙️</span><span>Ayarlar</span>
+      </div>
+    </div>
+    <div class="sidebar-bottom">
+      <button class="logout-btn" onclick="doLogout()">🚪 Çıxış</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard">
+      <div class="topbar">
+        <h2>📊 Dashboard</h2>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">📦</div>
+          <div class="stat-num" id="stat-products">0</div>
+          <div class="stat-label">Məhsul</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🛒</div>
+          <div class="stat-num" id="stat-orders">0</div>
+          <div class="stat-label">Sifariş</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🆕</div>
+          <div class="stat-num" id="stat-new">0</div>
+          <div class="stat-label">Yeni sifariş</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>🕐 Son sifarişlər</h3></div>
+        <table>
+          <thead><tr><th>Ad</th><th>Telefon</th><th>Məhsul</th><th>Status</th><th>Tarix</th></tr></thead>
+          <tbody id="recent-orders"><tr><td colspan="5" class="loading">Yüklənir...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PRODUCTS -->
+    <div id="page-products" class="hidden">
+      <div class="topbar">
+        <h2>📦 Məhsullar</h2>
+        <button class="btn btn-red" onclick="openProductModal()">➕ Yeni məhsul</button>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Məhsul</th><th>Qiymət</th><th>Slug</th><th>Link</th><th>Əməliyyat</th></tr></thead>
+          <tbody id="products-table"><tr><td colspan="5" class="loading">Yüklənir...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ORDERS -->
+    <div id="page-orders" class="hidden">
+      <div class="topbar">
+        <h2>🛒 Sifarişlər</h2>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Ad</th><th>Telefon</th><th>Məhsul</th><th>Status</th><th>Tarix</th></tr></thead>
+          <tbody id="orders-table"><tr><td colspan="5" class="loading">Yüklənir...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="page-settings" class="hidden">
+      <div class="topbar"><h2>⚙️ Ayarlar</h2></div>
+      <div class="card">
+        <div class="card-header"><h3>Pixel Kodları</h3></div>
+        <div style="padding:24px;">
+          <div class="form-group">
+            <label>📘 Facebook Pixel ID</label>
+            <input type="text" id="fb-pixel" placeholder="Məs: 893155935525880">
+          </div>
+          <div class="form-group">
+            <label>🎵 TikTok Pixel ID</label>
+            <input type="text" id="tt-pixel" placeholder="Məs: CXXXXXXXXXXXXXXX">
+          </div>
+          <div class="form-group">
+            <label>🌐 Sayt başlığı</label>
+            <input type="text" id="site-title" placeholder="Məs: Biscela Store">
+          </div>
+          <button class="btn btn-red" onclick="saveSettings()">💾 Saxla</button>
+          <span id="settings-msg" style="margin-left:12px;font-size:13px;color:#16a34a;"></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PRODUCT MODAL -->
+<div class="modal-overlay hidden" id="productModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Yeni məhsul</h3>
+      <button class="modal-close" onclick="closeProductModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="product-id">
+      <div class="form-group">
+        <label>Məhsul adı *</label>
+        <input type="text" id="product-name" placeholder="Məs: Boyun Masajörü">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Qiymət (AZN) *</label>
+          <input type="number" id="product-price" placeholder="59">
+        </div>
+        <div class="form-group">
+          <label>Əvvəlki qiymət (AZN)</label>
+          <input type="number" id="product-old-price" placeholder="90">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Slug (URL) *</label>
+        <input type="text" id="product-slug" placeholder="boyun-masajoru">
+        <small style="color:#6b7280;font-size:12px;">biscela.store/<span id="slug-preview">boyun-masajoru</span></small>
+      </div>
+      <div class="form-group">
+        <label>Açıqlama mətnləri (hər sətir ayrı blok olacaq)</label>
+        <textarea id="product-desc" placeholder="Hər sətirə bir açıqlama yazın&#10;Məsələn: Boyun ağrılarını azaldır&#10;3 sürət rejimi var"></textarea>
+      </div>
+      <div class="form-group">
+        <label>🖼️ Şəkillər</label>
+        <div class="img-upload-area" onclick="document.getElementById('img-input').click()">
+          <input type="file" id="img-input" multiple accept="image/*" onchange="handleImages(this)">
+          <div>📷 Şəkil seçmək üçün bas</div>
+          <div style="font-size:12px;color:#9ca3af;margin-top:4px;">Birdən çox şəkil seçə bilərsən</div>
+        </div>
+        <div class="img-preview" id="img-preview"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-gray" onclick="closeProductModal()">Ləğv et</button>
+      <button class="btn btn-red" onclick="saveProduct()" id="save-btn">💾 Saxla</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://vxlswyadvebtqfftflmt.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_obSRm2z3Og9RGg52ONdxIw_yKqtgVjG';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Admin credentials (simple)
+const ADMIN_EMAIL = 'admin@biscela.store';
+const ADMIN_PASS = 'biscela2025';
+
+let selectedImages = [];
+let editingProductId = null;
+
+// ── AUTH ──
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value.trim();
+  if (email === ADMIN_EMAIL && pass === ADMIN_PASS) {
+    document.getElementById('loginPage').classList.add('hidden');
+    document.getElementById('adminPanel').classList.remove('hidden');
+    loadDashboard();
+  } else {
+    const err = document.getElementById('loginError');
+    err.textContent = 'Email və ya şifrə səhvdir!';
+    err.classList.remove('hidden');
+  }
+}
+
+function doLogout() {
+  document.getElementById('loginPage').classList.remove('hidden');
+  document.getElementById('adminPanel').classList.add('hidden');
+}
+
+document.getElementById('loginPass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+// ── NAVIGATION ──
+function showPage(page) {
+  ['dashboard','products','orders','settings'].forEach(p => {
+    document.getElementById('page-'+p).classList.add('hidden');
+    document.getElementById('menu-'+p).classList.remove('active');
+  });
+  document.getElementById('page-'+page).classList.remove('hidden');
+  document.getElementById('menu-'+page).classList.add('active');
+
+  if (page === 'products') loadProducts();
+  if (page === 'orders') loadOrders();
+  if (page === 'settings') loadSettings();
+}
+
+// ── DASHBOARD ──
+async function loadDashboard() {
+  const { data: products } = await sb.from('products').select('id');
+  const { data: orders } = await sb.from('orders').select('*').order('created_at', { ascending: false });
+
+  document.getElementById('stat-products').textContent = products?.length || 0;
+  document.getElementById('stat-orders').textContent = orders?.length || 0;
+  document.getElementById('stat-new').textContent = orders?.filter(o => o.status === 'new').length || 0;
+
+  const recent = (orders || []).slice(0, 5);
+  const { data: prods } = await sb.from('products').select('id,name');
+  const prodMap = {};
+  (prods || []).forEach(p => prodMap[p.id] = p.name);
+
+  const tbody = document.getElementById('recent-orders');
+  if (!recent.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty">Hələ sifariş yoxdur</td></tr>'; return; }
+  tbody.innerHTML = recent.map(o => `
+    <tr>
+      <td>${o.customer_name}</td>
+      <td>${o.customer_phone}</td>
+      <td>${prodMap[o.product_id] || '-'}</td>
+      <td><span class="badge ${o.status==='new'?'badge-yellow':o.status==='done'?'badge-green':'badge-red'}">${o.status==='new'?'Yeni':o.status==='done'?'Tamamlandı':'Ləğv'}</span></td>
+      <td>${new Date(o.created_at).toLocaleDateString('az-AZ')}</td>
+    </tr>
+  `).join('');
+}
+
+// ── PRODUCTS ──
+async function loadProducts() {
+  const { data } = await sb.from('products').select('*').order('created_at', { ascending: false });
+  const tbody = document.getElementById('products-table');
+  if (!data?.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty">Hələ məhsul yoxdur</td></tr>'; return; }
+  tbody.innerHTML = data.map(p => `
+    <tr>
+      <td><strong>${p.name}</strong></td>
+      <td>${p.price} AZN ${p.old_price ? '<s style="color:#9ca3af">'+p.old_price+' AZN</s>' : ''}</td>
+      <td>${p.slug}</td>
+      <td><a href="product.html?slug=${p.slug}" target="_blank" style="color:#e53935;font-size:13px;">🔗 Aç</a></td>
+      <td>
+        <button class="btn btn-gray" style="padding:6px 12px;font-size:12px;" onclick="editProduct(${p.id})">✏️ Redaktə</button>
+        <button class="btn btn-red" style="padding:6px 12px;font-size:12px;margin-left:4px;" onclick="deleteProduct(${p.id})">🗑️</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openProductModal(id) {
+  editingProductId = null;
+  selectedImages = [];
+  document.getElementById('product-id').value = '';
+  document.getElementById('product-name').value = '';
+  document.getElementById('product-price').value = '';
+  document.getElementById('product-old-price').value = '';
+  document.getElementById('product-slug').value = '';
+  document.getElementById('product-desc').value = '';
+  document.getElementById('img-preview').innerHTML = '';
+  document.getElementById('modal-title').textContent = 'Yeni məhsul';
+  document.getElementById('productModal').classList.remove('hidden');
+}
+
+async function editProduct(id) {
+  const { data } = await sb.from('products').select('*').eq('id', id).single();
+  if (!data) return;
+  editingProductId = id;
+  document.getElementById('product-id').value = id;
+  document.getElementById('product-name').value = data.name;
+  document.getElementById('product-price').value = data.price;
+  document.getElementById('product-old-price').value = data.old_price || '';
+  document.getElementById('product-slug').value = data.slug;
+  document.getElementById('product-desc').value = data.description || '';
+  document.getElementById('modal-title').textContent = 'Məhsulu redaktə et';
+  
+  // Show existing images
+  const preview = document.getElementById('img-preview');
+  preview.innerHTML = '';
+  if (data.images && data.images.length) {
+    data.images.forEach((url, i) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'img-thumb-wrap';
+      wrap.innerHTML = `<img src="${url}" class="img-thumb"><button class="img-remove" onclick="removeExistingImage(${i})">×</button>`;
+      preview.appendChild(wrap);
+    });
+  }
+  selectedImages = data.images || [];
+  document.getElementById('productModal').classList.remove('hidden');
+}
+
+function removeExistingImage(index) {
+  selectedImages.splice(index, 1);
+  editProduct(editingProductId);
+}
+
+function closeProductModal() {
+  document.getElementById('productModal').classList.add('hidden');
+}
+
+document.getElementById('product-name').addEventListener('input', function() {
+  const slug = this.value.toLowerCase()
+    .replace(/ə/g,'e').replace(/ı/g,'i').replace(/ö/g,'o')
+    .replace(/ü/g,'u').replace(/ç/g,'c').replace(/ş/g,'s')
+    .replace(/ğ/g,'g').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  document.getElementById('product-slug').value = slug;
+  document.getElementById('slug-preview').textContent = slug;
+});
+
+document.getElementById('product-slug').addEventListener('input', function() {
+  document.getElementById('slug-preview').textContent = this.value;
+});
+
+function handleImages(input) {
+  const files = Array.from(input.files);
+  const preview = document.getElementById('img-preview');
+  
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      selectedImages.push({ file: file, url: e.target.result, isNew: true });
+      const wrap = document.createElement('div');
+      wrap.className = 'img-thumb-wrap';
+      const idx = selectedImages.length - 1;
+      wrap.innerHTML = `<img src="${e.target.result}" class="img-thumb"><button class="img-remove" onclick="removeNewImage(${idx}, this)">×</button>`;
+      preview.appendChild(wrap);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeNewImage(idx, btn) {
+  selectedImages.splice(idx, 1);
+  btn.parentElement.remove();
+}
+
+async function uploadImage(file, slug) {
+  const ext = file.name.split('.').pop();
+  const fileName = `${slug}/${Date.now()}.${ext}`;
+  const { data, error } = await sb.storage.from('product-images').upload(fileName, file);
+  if (error) return null;
+  const { data: urlData } = sb.storage.from('product-images').getPublicUrl(fileName);
+  return urlData.publicUrl;
+}
+
+async function saveProduct() {
+  const name = document.getElementById('product-name').value.trim();
+  const price = parseFloat(document.getElementById('product-price').value);
+  const oldPrice = parseFloat(document.getElementById('product-old-price').value) || null;
+  const slug = document.getElementById('product-slug').value.trim();
+  const desc = document.getElementById('product-desc').value.trim();
+
+  if (!name || !price || !slug) { alert('Ad, qiymət və slug mütləqdir!'); return; }
+
+  const btn = document.getElementById('save-btn');
+  btn.textContent = '⏳ Saxlanır...';
+  btn.disabled = true;
+
+  // Upload new images
+  const finalImages = [];
+  for (const img of selectedImages) {
+    if (img.isNew && img.file) {
+      const url = await uploadImage(img.file, slug);
+      if (url) finalImages.push(url);
+    } else if (typeof img === 'string') {
+      finalImages.push(img);
+    } else if (img.url && !img.isNew) {
+      finalImages.push(img.url);
+    }
+  }
+
+  const productData = { name, price, old_price: oldPrice, slug, description: desc, images: finalImages };
+
+  let error;
+  if (editingProductId) {
+    ({ error } = await sb.from('products').update(productData).eq('id', editingProductId));
+  } else {
+    ({ error } = await sb.from('products').insert([productData]));
+  }
+
+  btn.textContent = '💾 Saxla';
+  btn.disabled = false;
+
+  if (error) { alert('Xəta: ' + error.message); return; }
+  closeProductModal();
+  loadProducts();
+}
+
+async function deleteProduct(id) {
+  if (!confirm('Bu məhsulu silmək istəyirsiniz?')) return;
+  await sb.from('products').delete().eq('id', id);
+  loadProducts();
+}
+
+// ── ORDERS ──
+async function loadOrders() {
+  const { data: orders } = await sb.from('orders').select('*').order('created_at', { ascending: false });
+  const { data: prods } = await sb.from('products').select('id,name');
+  const prodMap = {};
+  (prods || []).forEach(p => prodMap[p.id] = p.name);
+
+  const tbody = document.getElementById('orders-table');
+  if (!orders?.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty">Hələ sifariş yoxdur</td></tr>'; return; }
+  tbody.innerHTML = orders.map(o => `
+    <tr>
+      <td><strong>${o.customer_name}</strong></td>
+      <td>${o.customer_phone}</td>
+      <td>${prodMap[o.product_id] || '-'}</td>
+      <td>
+        <select class="status-select" onchange="updateStatus(${o.id}, this.value)">
+          <option value="new" ${o.status==='new'?'selected':''}>🆕 Yeni</option>
+          <option value="done" ${o.status==='done'?'selected':''}>✅ Tamamlandı</option>
+          <option value="cancelled" ${o.status==='cancelled'?'selected':''}>❌ Ləğv</option>
+        </select>
+      </td>
+      <td>${new Date(o.created_at).toLocaleDateString('az-AZ')}</td>
+    </tr>
+  `).join('');
+}
+
+async function updateStatus(id, status) {
+  await sb.from('orders').update({ status }).eq('id', id);
+}
+
+// ── SETTINGS ──
+async function loadSettings() {
+  const { data } = await sb.from('settings').select('*').limit(1).single();
+  if (data) {
+    document.getElementById('fb-pixel').value = data.facebook_pixel || '';
+    document.getElementById('tt-pixel').value = data.tiktok_pixel || '';
+    document.getElementById('site-title').value = data.site_title || '';
+  }
+}
+
+async function saveSettings() {
+  const fb = document.getElementById('fb-pixel').value.trim();
+  const tt = document.getElementById('tt-pixel').value.trim();
+  const title = document.getElementById('site-title').value.trim();
+
+  const { data: existing } = await sb.from('settings').select('id').limit(1).single();
+  if (existing) {
+    await sb.from('settings').update({ facebook_pixel: fb, tiktok_pixel: tt, site_title: title }).eq('id', existing.id);
+  } else {
+    await sb.from('settings').insert([{ facebook_pixel: fb, tiktok_pixel: tt, site_title: title }]);
+  }
+  const msg = document.getElementById('settings-msg');
+  msg.textContent = '✅ Saxlandı!';
+  setTimeout(() => msg.textContent = '', 3000);
+}
+</script>
+</body>
+</html>
