@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sifarişiniz Qəbul Olundu!</title>
+    <title>Sifarişiniz Uğurla Qəbul Olundu!</title>
     
     <script>
     !function(f,b,e,v,n,t,s)
@@ -16,26 +16,37 @@
     'https://connect.facebook.net/en_US/fbevents.js');
     fbq('init', '1453724033211204');
     fbq('track', 'PageView');
+    </script>
     
-    // BU HİSSƏ ƏSASDIR: Purchase (Alış) Siqnalı
-    fbq('track', 'Purchase', {
-        value: 15.00, // Bura orta qiymət yaza bilərsən
-        currency: 'AZN'
-    });
+    <script>
+        // Saytın yaddaşından (localStorage) məhsulun qiymətini və adını çəkirik
+        // Əgər tapmasa, standart olaraq 1 AZN göndərir ki, siqnal boşa getməsin
+        var productPrice = localStorage.getItem('product_price') || 1;
+        var productName = localStorage.getItem('product_name') || 'Məhsul';
+
+        fbq('track', 'Purchase', {
+            content_name: productName,
+            value: parseFloat(productPrice),
+            currency: 'AZN'
+        });
     </script>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; background-color: #f4f4f4; }
-        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: inline-block; }
-        h1 { color: #28a745; }
-        p { color: #555; }
-        .btn { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 100px 20px; background-color: #f0f2f5; color: #333; }
+        .container { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: inline-block; max-width: 500px; }
+        .icon { font-size: 60px; color: #28a745; margin-bottom: 20px; }
+        h1 { margin: 0 0 10px; color: #1c1e21; }
+        p { font-size: 18px; color: #606770; margin-bottom: 30px; }
+        .btn { background-color: #0084ff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; transition: background 0.3s; }
+        .btn:hover { background-color: #0073e6; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>Təşəkkür edirik! 🎉</h1>
-        <p>Sifarişiniz uğurla qəbul olundu. Tezliklə sizinlə əlaqə saxlayacağıq.</p>
-        <a href="/" class="btn">Ana səhifəyə qayıt</a>
+    <div class="container">
+        <div class="icon">✅</div>
+        <h1>Təşəkkür edirik!</h1>
+        <p>Sifarişiniz qəbul olundu. Əməkdaşlarımız qısa zamanda sizinlə əlaqə saxlayacaq.</p>
+        <br>
+        <a href="/" class="btn">Mağazaya qayıt</a>
     </div>
 </body>
 </html>
