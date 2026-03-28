@@ -358,7 +358,7 @@ function renderProduct(p) {
       <div class="order-box">${orderBoxInner('name2','phone2')}</div>
     </div>
     <footer>
-      <div>Biscela Store &nbsp;·&nbsp; Tel: +994 XX XXX XX XX</div>
+      <div>Biscela Store &nbsp;·&nbsp; Tel: +994 77 127 50 25</div>
       <div style="margin-top:6px;"><a href="#">Məxfilik Siyasəti</a></div>
     </footer>
     <div class="sticky-mobile-btn" style="position:fixed;bottom:0;left:0;right:0;z-index:999;padding:12px;background:#fff;box-shadow:0 -4px 20px rgba(0,0,0,0.12);">
